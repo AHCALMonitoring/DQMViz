@@ -32,10 +32,12 @@
 // -- dqm4hep headers
 #include "dqm4hep/DQM4HEP.h"
 #include "dqm4hep/DQMXmlIO.h"
+#include "dqm4hep/DQMLogger.h"
 
 // -- qt headers
 #include <QObject>
 #include <QMainWindow>
+#include <QPushButton>
 
 namespace dqm4hep
 {
@@ -43,10 +45,11 @@ namespace dqm4hep
 class DQMMonitoring;
 class DQMMonitorElementView;
 class DQMCanvasView;
+class DQMLoggerWidget;
 
 /** DQMMonitoringView class
  */ 
-class DQMMonitoringView : public QObject, public DQMXmlIO
+class DQMMonitoringView : public QObject, public DQMXmlIO, public DQMLogger
 {
 	Q_OBJECT
 
@@ -62,6 +65,14 @@ public:
 	/** Get the monitoring instance
 	 */
 	DQMMonitoring *getMonitoring() const;
+
+	/** Log a message in the application. Log level is 'MESSAGE'
+	 */
+	void log(const std::string &message);
+
+	/** Log in the logger with a log level
+	 */
+	void log(LogLevel level, const std::string &message);
 
 	/** Export settings to xml element
 	 */
@@ -125,7 +136,9 @@ protected:
 	DQMMonitoring              *m_pMonitoring;            ///< The monitoring instance.
 	DQMCanvasView              *m_pCanvasView;            ///< The canvas view to display monitor elements.
 	DQMMonitorElementView      *m_pMonitorElementView;    ///< The monitor element view to display the element hierarchy.
+	DQMLoggerWidget            *m_pLoggerWidget;          ///< The main logger widget of the application
 	QMainWindow                *m_pMainWindow;            ///< The main window containing the whole view.
+	QPushButton                *m_pAutoUpdateButton;      ///< The push button to start/stop auto queries to collectors
 };
 
 } 

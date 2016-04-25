@@ -8,9 +8,21 @@ CMAKE_MINIMUM_REQUIRED( VERSION 2.6 FATAL_ERROR )
 # ----- project name -----
 PROJECT( DQMViz )
 
-SET( ${PROJECT_NAME}_VERSION_MAJOR 1 )
-SET( ${PROJECT_NAME}_VERSION_MINOR 2 )
+SET( ${PROJECT_NAME}_VERSION_MAJOR 2 )
+SET( ${PROJECT_NAME}_VERSION_MINOR 0 )
 SET( ${PROJECT_NAME}_VERSION_PATCH 0 )
+
+###############################
+# Require C++11
+INCLUDE( CheckCXXCompilerFlag )
+
+CHECK_CXX_COMPILER_FLAG("-std=c++11" COMPILER_SUPPORTS_CXX11)
+
+IF( COMPILER_SUPPORTS_CXX11 )
+  SET (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
+ELSE()
+	MESSAGE( SEND_ERROR "DQMCore requires C++11 support. Please upgrade your compiler !" )
+ENDIF()
 
 # ----- dependencies -----
 LIST( APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake )
@@ -104,14 +116,14 @@ IF( INSTALL_DOC )
         MESSAGE( "Please install doxygen or set INSTALL_DOC to OFF" )
         MESSAGE( "" )
     ENDIF()
-    
+
 ENDIF()
 
 
-# ---- Generate DQMVizConfig.h 
+# ---- Generate DQMVizConfig.h
 CONFIGURE_FILE( "${PROJECT_SOURCE_DIR}/cmake/${PROJECT_NAME}Config.h.cmake.in"
     "${PROJECT_SOURCE_DIR}/source/include/${PROJECT_NAME}Config.h" @ONLY )
-    
+
 
 # ----- Add source directory -----
 ADD_SUBDIRECTORY( ./source )

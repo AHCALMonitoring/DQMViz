@@ -50,7 +50,7 @@ class DQMCanvas;
 
 /** DQMMonitoringController class
  */ 
-class DQMMonitoringController : public QObject, public DQMLogger
+class DQMMonitoringController : public QObject
 {
 	Q_OBJECT
 
@@ -160,6 +160,10 @@ private slots:
 	 *  when a publication is received
 	 */
 	void receiveMonitorElementPublication(const DQMPublication &publication);
+
+	/** Qt slot to receive new available monitor elements from a collector
+	 */
+	void receiveAvailableMonitorElements(const DQMMonitorElementInfoList &infoList);
 
 	/** Send the list of subscribed elements to the collector.
 	 *  This is usually called when the server is restarted

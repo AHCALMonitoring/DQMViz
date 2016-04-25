@@ -40,6 +40,8 @@
 
 #include <TImage.h>
 #include <TH1.h>
+#include <TPaveStats.h>
+#include <TStyle.h>
 
 #include <QAction>
 #include <QApplication>
@@ -121,7 +123,9 @@ void DQMRootWidget::postDraw()
 	currentSize.setWidth(currentSize.width()-1);
 	resize(currentSize);
 
+	GetCanvas()->Modified();
 	GetCanvas()->Resize();
+	GetCanvas()->Update();
 	Refresh();
 }
 
@@ -130,8 +134,11 @@ void DQMRootWidget::postDraw()
 void DQMRootWidget::drawNoVis()
 {
 	TImage *pNoVisImage = this->getNoVisImage();
+
 	this->GetCanvas()->cd();
+	this->GetCanvas()->Clear();
 	pNoVisImage->Draw();
+	this->GetCanvas()->Update();
 	this->postDraw();
 	m_pCurrentMonitorElement = NULL;
 }
@@ -154,15 +161,12 @@ void DQMRootWidget::draw(DQMGuiMonitorElement *pMonitorElement)
 	TObject *pObject = pMonitorElement->getMonitorElement()->getObject();
 	const std::string &drawOption(pMonitorElement->getMonitorElement()->getDrawOption());
 
-	if(pMonitorElement->getMonitorElement()->isHistogram())
-	{
-		TH1 *pHistogram = dynamic_cast<TH1*>(pObject);
-		pHistogram->SetStats(0);
-	}
+	gStyle->SetStatColor(kGray);
 
-	this->cd();
+	this->GetCanvas()->cd();
+	this->GetCanvas()->Clear();
 	pObject->Draw(drawOption.c_str());
-	gPad->Update();
+	this->GetCanvas()->Update();
 	this->postDraw();
 
 	this->updateMonitorElement(pMonitorElement);

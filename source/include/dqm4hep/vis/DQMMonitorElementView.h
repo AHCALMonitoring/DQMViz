@@ -163,6 +163,10 @@ public:
 	 */
 	QList<QTreeWidgetItem*> getCheckedMonitorElements() const;
 
+	/** Get the checked monitor element items for a target module
+	 */
+	QList<QTreeWidgetItem*> getCheckedMonitorElements(const QString &moduleName) const;
+
 	/** Get all monitor element items for a given module
 	 */
 	QList<QTreeWidgetItem*> getAllMonitorElementItems(const QString &moduleName) const;
@@ -187,6 +191,23 @@ public slots:
 	/** Uncheck selected monitor element items
 	 */
 	void uncheckSelectedMonitorElements();
+
+	/** Remove all selected items from the view
+	 *  Notifies the model to remove the corresponding elements
+	 */
+	void removeSelectedItems();
+
+	/** Export the tree view in a root file
+	 */
+	void exportAll();
+
+	/**
+	 */
+	void exportChecked();
+
+	/**
+	 */
+	void exportToRootFile(bool onlyChecked = false);
 
 private:
 	/** Create a directory and set pTreeItem as parent item.
@@ -247,6 +268,10 @@ private slots:
 	 */
 	void queryUpdate();
 
+	/**
+	 */
+	void openSelectedMonitorElementInfo();
+
 private:
 
 	DQMMonitoring          *m_pMonitoring;
@@ -288,6 +313,10 @@ public:
 	/**
 	 */
 	QList<QTreeWidgetItem*> getCheckedMonitorElements(const std::string &collectorName) const;
+
+	/**
+	 */
+	QList<QTreeWidgetItem*> getCheckedMonitorElements(const std::string &collectorName, const std::string &moduleName) const;
 
 	/**
 	 */

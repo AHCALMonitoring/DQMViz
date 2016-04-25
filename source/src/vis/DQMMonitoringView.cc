@@ -32,6 +32,7 @@
 #include "dqm4hep/vis/DQMMonitoring.h"
 #include "dqm4hep/vis/DQMMonitorElementView.h"
 #include "dqm4hep/vis/DQMCanvasView.h"
+#include "dqm4hep/vis/DQMLoggerWidget.h"
 #include "DQMCoreConfig.h"
 #include "DQMVizConfig.h"
 
@@ -227,6 +228,7 @@ void DQMMonitoringView::buildCentralView()
 	m_pMainWindow->setCentralWidget(pMainWidget);
 
 	QWidget *pLeftViewWidget = new QWidget();
+	pLeftViewWidget->setMinimumWidth(300);
 	pLeftViewWidget->setLayout(new QVBoxLayout());
 
 
@@ -234,8 +236,8 @@ void DQMMonitoringView::buildCentralView()
 	QWidget *pUpdateButtonAreaWidget = new QWidget();
 	pUpdateButtonAreaWidget->setLayout(new QHBoxLayout());
 
-	QPushButton *pAutoUpdateButton = new QPushButton("Start update");
-	pUpdateButtonAreaWidget->layout()->addWidget(pAutoUpdateButton);
+	m_pAutoUpdateButton = new QPushButton("Start update");
+	pUpdateButtonAreaWidget->layout()->addWidget(m_pAutoUpdateButton);
 
 	QPushButton *pUpdateButton = new QPushButton("Update");
 	pUpdateButtonAreaWidget->layout()->addWidget(pUpdateButton);
@@ -267,13 +269,22 @@ void DQMMonitoringView::buildCentralView()
 	pClearBrowseButtonAreaWidget->setMaximumHeight(50);
     pLeftViewWidget->layout()->addWidget(pClearBrowseButtonAreaWidget);
 
-
 	pMainWidget->addWidget(pLeftViewWidget);
 
-	m_pCanvasView = new DQMCanvasView(m_pMonitoring);
-	pMainWidget->addWidget(m_pCanvasView);
 
-	connect(pAutoUpdateButton, SIGNAL(clicked()), this, SLOT(handleAutoUpdateButtonClicked()));
+	// canvas area and logger widget
+	QWidget *pRightView = new QWidget();
+	pRightView->setLayout(new QVBoxLayout());
+	pMainWidget->addWidget(pRightView);
+
+	m_pCanvasView = new DQMCanvasView(m_pMonitoring);
+	pRightView->layout()->addWidget(m_pCanvasView);
+
+	m_pLoggerWidget = new DQMLoggerWidget();
+	m_pLoggerWidget->logView()->setMinimumHeight(200);
+	pRightView->layout()->addWidget(m_pLoggerWidget);
+
+	connect(m_pAutoUpdateButton, SIGNAL(clicked()), this, SLOT(handleAutoUpdateButtonClicked()));
 	connect(pUpdateButton, SIGNAL(clicked()), this->getMonitoring()->getController(), SLOT(querySubscribedMonitorElements()));
 	connect(pClearButton, SIGNAL(clicked()), this->getMonitoring()->getController(), SLOT(clearMonitoring()));
 	connect(pBrowseButton, SIGNAL(clicked()), this->getMonitoring()->getController(), SLOT(openBrowser()));
@@ -281,9 +292,23 @@ void DQMMonitoringView::buildCentralView()
 
 //-------------------------------------------------------------------------------------------------
 
+void DQMMonitoringView::log(const std::string &message)
+{
+	m_pLoggerWidget->log(MESSAGE, message);
+}
+
+//-------------------------------------------------------------------------------------------------
+
+void DQMMonitoringView::log(LogLevel level, const std::string &message)
+{
+	m_pLoggerWidget->log(level, message);
+}
+
+//-------------------------------------------------------------------------------------------------
+
 void DQMMonitoringView::buildStatusBar()
 {
-	this->getMainWindow()->statusBar()->showMessage("Welcome", 3000);
+//	this->getMainWindow()->statusBar()->showMessage("Welcome", 3000);
 }
 
 //-------------------------------------------------------------------------------------------------
@@ -292,6 +317,7 @@ void DQMMonitoringView::showView()
 {
 	this->buildView();
 	this->getMainWindow()->show();
+	this->log("Welcome !");
 }
 
 //-------------------------------------------------------------------------------------------------
@@ -308,6 +334,9 @@ void DQMMonitoringView::clear()
 {
 	m_pMonitorElementView->clear();
 	m_pCanvasView->clear();
+
+	this->getMonitoring()->getController()->setUpdateMode(false);
+	m_pAutoUpdateButton->setText("Start update");
 }
 
 //-------------------------------------------------------------------------------------------------

@@ -68,7 +68,7 @@ public slots:
 	/** Update the monitor element in the model
 	 *  Add or replace if exists
 	 */
-	virtual void updateMonitorElement(DQMMonitorElement *pMonitorElement);
+	virtual void updateMonitorElement(DQMMonitorElementPtr &monitorElement);
 
 	/** Update the monitor element in the model
 	 *  Add or replace if exists
@@ -78,6 +78,11 @@ public slots:
 	/** Remove the monitor element form the model
 	 */
 	virtual void removeMonitorElement(DQMGuiMonitorElement *pMonitorElement);
+
+	/**
+	 */
+	virtual void removeMonitorElement(const std::string &collectorName, const std::string &moduleName,
+			const std::string &fullPath, const std::string &name);
 
 	/** Clear all the model contents
 	 */
@@ -100,7 +105,7 @@ public:
 	 *  The created monitor element is not registered in the model.
 	 *  Use updateMonitorElement(elt) to register it
 	 */
-	virtual DQMGuiMonitorElement *createGuiMonitorElement(DQMMonitorElement *pMonitorElement) const;
+	virtual DQMGuiMonitorElement *createGuiMonitorElement(DQMMonitorElementPtr &monitorElement) const;
 
 	/**
 	 */

@@ -138,6 +138,10 @@ private slots:
 
     /**
      */
+    void openLogFile();
+
+    /**
+     */
     void handleAutomaticModeButtonClicked();
 
     /**
@@ -196,7 +200,7 @@ private:
 
 private:
 
-    DQMJobInterface        *m_pJobIterface;
+    DQMJobInterface        *m_pJobInterface;
     std::string             m_currentJsonFile;
 
     QPushButton            *m_pAutomaticModeButton;
@@ -219,6 +223,7 @@ private:
     QPushButton            *m_pStartAllJobsButton;
 
     QPushButton            *m_pUpdateButton;
+    QPushButton            *m_pOpenLogFileButton;
 
     QMenuBar                *m_pMenuBar;
     QMenu                   *m_pContextMenu;
@@ -240,6 +245,7 @@ private:
     QAction                 *m_pStartAllJobsAction;
 
     QAction                 *m_pUpdateAction;
+    QAction                 *m_pOpenLogFileAction;
 };
 
 }

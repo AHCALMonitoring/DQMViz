@@ -100,8 +100,7 @@ void DQMMonitoringController::log(const std::string &message)
 
 void DQMMonitoringController::log(LogLevel level, const std::string &message)
 {
-	QString completeMessage = m_logLevelToTextMap.find(level).value() + message.c_str();
-	this->getMonitoring()->getView()->getMainWindow()->statusBar()->showMessage(completeMessage, 2000);
+	this->getMonitoring()->getView()->log(level, message);
 }
 
 //-------------------------------------------------------------------------------------------------
@@ -125,6 +124,10 @@ DQMGuiMonitorElementClient *DQMMonitoringController::getClient(const std::string
 	// to receive monitor elements
 	connect(pNewClient, SIGNAL(monitorElementPublicationReceived(const DQMPublication &)),
 			this, SLOT(receiveMonitorElementPublication(const DQMPublication &)));
+
+	// to receive new available monitor elements
+	connect(pNewClient, SIGNAL(monitorElementsAvailable(const DQMMonitorElementInfoList &)),
+			this, SLOT(receiveAvailableMonitorElements(const DQMMonitorElementInfoList &)));
 
 	// to handle server startup
 	connect(pNewClient, SIGNAL(onServerStartup()), this, SLOT(handleServerStartup()));
@@ -353,8 +356,58 @@ void DQMMonitoringController::receiveMonitorElementPublication(const DQMPublicat
 		std::string moduleName = iter->first;
 
 		for(int i=0 ; i<iter->second.size() ; i++)
-			this->getMonitoring()->getModel()->updateMonitorElement(iter->second.at(i));
+		{
+			DQMMonitorElementPtr monitorElement = iter->second.at(i);
+			this->getMonitoring()->getModel()->updateMonitorElement(monitorElement);
+		}
 	}
+}
+
+//-------------------------------------------------------------------------------------------------
+
+void DQMMonitoringController::receiveAvailableMonitorElements(const DQMMonitorElementInfoList &infoList)
+{
+	DQMGuiMonitorElementClient *pGuiClient = qobject_cast<DQMGuiMonitorElementClient *>( sender() );
+
+	if( ! pGuiClient )
+		return;
+
+	DQMMonitorElementClient *pClient = pGuiClient->getMonitorElementClient();
+
+	if( ! pClient->isConnectedToService() )
+		return;
+
+	QString collectorName = pClient->getCollectorName().c_str();
+	QSet<QString> moduleNameSet;
+
+	// get module list
+	for(auto iter = infoList.begin(), endIter = infoList.end() ;
+			endIter != iter ; ++iter)
+		moduleNameSet << iter->find( DQMKey::MODULE_NAME )->second.c_str();
+
+	DQMMonitorElementView *pMeView = this->getMonitoring()->getView()->getMonitorElementView();
+	QStringList moduleNameList(moduleNameSet.toList());
+	DQMMonitorElementRequest request;
+
+	for(unsigned int i=0 ; i<moduleNameList.size() ; i++)
+	{
+		QList<QTreeWidgetItem *> items = pMeView->getCheckedMonitorElements(collectorName.toStdString(), moduleNameList.at(i).toStdString());
+
+		for(int j=0 ; j<items.size() ; j++)
+		{
+			DQMMonitorElementNavigator *pNavigator = qobject_cast<DQMMonitorElementNavigator *>(items.at(j)->treeWidget());
+
+			std::string moduleName = pNavigator->getModuleName(items.at(j)).toStdString();
+			std::string path = pNavigator->getFullPathName(items.at(j)).toStdString();
+			std::string name = items.at(j)->text(0).toStdString();
+			std::string fullName = (DQMPath(path) + name).getPath();
+
+			request.insert(DQMMonitorElementRequest::value_type(moduleName, fullName));
+		}
+	}
+
+	if( ! request.empty() )
+		pClient->replaceSubscription(request);
 }
 
 //-------------------------------------------------------------------------------------------------
@@ -371,7 +424,7 @@ void DQMMonitoringController::handleServerStartup()
 
 	// get all subscribed elements
 	DQMMonitorElementView *pMeView = this->getMonitoring()->getView()->getMonitorElementView();
-	pMeView->enableSubscription(collectorName, true);
+//	pMeView->enableSubscription(collectorName, true);
 	QList<QTreeWidgetItem *> items = pMeView->getCheckedMonitorElements(collectorName);
 
 	DQMMonitorElementRequest request;
@@ -391,6 +444,7 @@ void DQMMonitoringController::handleServerStartup()
 	if(!pClient->isConnectedToService())
 		pClient->connectToService();
 
+	pClient->setUpdateMode(m_updateMode);
 	pClient->replaceSubscription(request);
 }
 
@@ -414,9 +468,9 @@ void DQMMonitoringController::handleServerShutdown()
 			"  dqm4hep_start_monitor_element_collector -c %1 \n"
 			"or restart it from the job control.").arg(collectorName.c_str()));
 
-	DQMMonitorElementView *pMeView = this->getMonitoring()->getView()->getMonitorElementView();
-	pMeView->uncheckAllMonitorElements(collectorName);
-	pMeView->enableSubscription(collectorName, false);
+//	DQMMonitorElementView *pMeView = this->getMonitoring()->getView()->getMonitorElementView();
+//	pMeView->uncheckAllMonitorElements(collectorName);
+//	pMeView->enableSubscription(collectorName, false);
 }
 
 //-------------------------------------------------------------------------------------------------
@@ -592,7 +646,10 @@ void DQMMonitoringController::saveAs(const std::string &fileName) const
 
 	TiXmlElement *pDimDnsNodeElement = new TiXmlElement("dimDnsNode");
 	pMonitoringElement->LinkEndChild(pDimDnsNodeElement);
-	pDimDnsNodeElement->SetAttribute("value", DimClient::getDnsNode());
+
+	char *pDimDnsNode = getenv("DIM_DNS_NODE");
+	std::string dimDnsNode = pDimDnsNode ? pDimDnsNode : "";
+	pDimDnsNodeElement->SetAttribute("value", dimDnsNode);
 
 	TiXmlElement *pViewElement = this->getMonitoring()->getView()->toXml();
 
@@ -919,9 +976,13 @@ void DQMMonitoringController::saveAs(DQMCanvasArea *pCanvasArea)
     	if(!pCanvas)
     		continue;
 
-    	TCanvas *pSaveCanvas = pCanvas->getRootWidget()->GetCanvas();
-    	std::string objectName = pCanvas->getCurrentMonitorElement()->getMonitorElement()->getName();
-    	pFile->WriteTObject(pSaveCanvas, objectName.c_str());
+    	DQMGuiMonitorElement *pGuiMonitorElement = pCanvas->getCurrentMonitorElement();
+
+    	if( ! pGuiMonitorElement || ! pGuiMonitorElement->getMonitorElement() )
+    		continue;
+
+    	TObject *pObject = pGuiMonitorElement->getMonitorElement()->getObject();
+    	pFile->WriteTObject(pObject, pObject->GetName());
     }
 
     pFile->Close();
@@ -984,8 +1045,19 @@ void DQMMonitoringController::saveAs(DQMCanvas *pCanvas)
 
     std::string realFileName = (baseFileName + extensionFileName).toStdString();
 
+    TFile *pFile = TFile::Open(realFileName.c_str(), "RECREATE");
+
     // save the canvas
-    pCanvas->getRootWidget()->GetCanvas()->SaveAs(realFileName.c_str());
+	DQMGuiMonitorElement *pGuiMonitorElement = pCanvas->getCurrentMonitorElement();
+
+	if( ! pGuiMonitorElement || ! pGuiMonitorElement->getMonitorElement() )
+		return;
+
+	TObject *pObject = pGuiMonitorElement->getMonitorElement()->getObject();
+	pFile->WriteTObject(pObject, pObject->GetName());
+
+	pFile->Close();
+	delete pFile;
 }
 
 //-------------------------------------------------------------------------------------------------
