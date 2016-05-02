@@ -154,6 +154,8 @@ DQMBrowserWidget::DQMBrowserWidget(DQMMonitoring *pMonitoring) :
 	connect(this, SIGNAL(keyPressEvent(QKeyEvent*)), this, SLOT(handleKeyPressEvent(QKeyEvent*)));
 	connect(m_pAppendButton, SIGNAL(clicked()), this, SLOT(handleUpdateButtonClicked()));
 	connect(m_pReplaceButton, SIGNAL(clicked()), this, SLOT(handleReplaceButtonClicked()));
+	connect(m_pModuleNameEdit, SIGNAL(returnPressed()), this, SLOT(querySearch()));
+	connect(m_pMonitorElementNameEdit, SIGNAL(returnPressed()), this, SLOT(querySearch()));
 
 	updateCollectorList();
 
@@ -309,6 +311,9 @@ void DQMBrowserWidget::fillModuleNameList(const DQMMonitorElementInfoList &nameL
 		QString monitorElementName = nameList.at(i).find( DQMKey::ME_NAME )->second.c_str();
 		QString monitorElementType = nameList.at(i).find( DQMKey::ME_TYPE )->second.c_str();
 		QString monitorElementDescription = nameList.at(i).find( DQMKey::ME_DESCRIPTION )->second.c_str();
+
+		if( monitorElementDescription.isEmpty() )
+			monitorElementDescription = "No description available";
 
 		QStringList itemColumns;
 		itemColumns << moduleName << monitorElementFullPath << monitorElementName << monitorElementType;

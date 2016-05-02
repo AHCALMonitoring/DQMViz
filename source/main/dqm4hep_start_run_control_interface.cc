@@ -31,7 +31,7 @@
 #include "DQMVizConfig.h"       // for soft version
 #include "dqm4hep/DQM4HEP.h"
 #include "dqm4hep/DQMLogging.h"
-#include "dqm4hep/vis/DQMRunControlWidget.h"
+#include "dqm4hep/vis/DQMRunControlInterfaceWidget.h"
 #include "dqm4hep/vis/DQMLoggerWidget.h"
 #include "dqm4hep/vis/DQMGuiTools.h"
 
@@ -127,31 +127,13 @@ int main(int argc, char* argv[])
 
 	QApplication app(argc, argv);
 
-	QMainWindow mainWindow;
-	DQMGuiTools::checkDimDnsNode(&mainWindow);
-
-	QString iconDir = QString(DQM4HEP_DIR) + "/icons";
-	mainWindow.setWindowIcon(QIcon(iconDir + "/RUN_CTRL.png"));
-
-	DQMLoggerWidget *pLoggerWidget = new DQMLoggerWidget();
-	DQMRunControlWidget *pRunControlWidget = new DQMRunControlWidget(pLoggerWidget);
-
-	pRunControlWidget->layout()->addWidget(pLoggerWidget);
-	pRunControlWidget->setRunControlName( runControlNameArg.getValue().c_str() );
-	pRunControlWidget->start();
-
-	mainWindow.setCentralWidget(pRunControlWidget);
-	QMenu *pFileMenu = mainWindow.menuBar()->addMenu("&File");
-	pFileMenu->addAction("&Import", pRunControlWidget, SLOT(importFile()));
-	pFileMenu->addAction("&Export", pRunControlWidget, SLOT(exportFile()));
-
-	DimServer::start( serverNameArg.getValue().c_str() );
-
-	mainWindow.show();
-	mainWindow.setWindowTitle("Run control (" + QString(runControlNameArg.getValue().c_str()) + ")");
+	DQMRunControlInterfaceWidget *pRunControlInterface = new DQMRunControlInterfaceWidget();
+	pRunControlInterface->setRunControlName( runControlNameArg.getValue() );
+	pRunControlInterface->show();
 
 	if(settingsFileNameArg.isSet())
-		pRunControlWidget->importFile(settingsFileNameArg.getValue());
+		pRunControlInterface->importFile(settingsFileNameArg.getValue());
 
-	return app.exec();
+	int ret = app.exec();
+	return ret;
 }
